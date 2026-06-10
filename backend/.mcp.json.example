@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "acme-products": {
+      "command": "node",
+      "args": ["D:\\dev\\architecture\\project\\acme-mcp\\dist\\index.js"],
+      "env": {
+        "PRODUCTS_API_URL": "http://localhost:1234"
+      }
+    },
+    "postman": {
+      "command": "npx",
+      "args": ["-y", "@postman/postman-mcp-server"],
+      "env": {
+        "POSTMAN_API_KEY": "YOUR_POSTMAN_API_KEY"
+      }
+    },
+    "keycloak": {
+      "command": "npx",
+      "args": ["-y", "keycloak-mcp"],
+      "env": {
+        "KEYCLOAK_URL": "http://localhost:8080",
+        "KEYCLOAK_ADMIN": "YOUR_KEYCLOAK_ADMIN_USER",
+        "KEYCLOAK_ADMIN_PASSWORD": "YOUR_KEYCLOAK_ADMIN_PASSWORD"
+      }
+    }
+  }
+}

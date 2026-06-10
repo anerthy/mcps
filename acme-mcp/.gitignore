@@ -4,6 +4,9 @@ node_modules/
 # Build output
 dist/
 
+# MCP config (may contain API keys — use .mcp.json.example instead)
+.mcp.json
+
 # Environment files
 .env
 .env.local

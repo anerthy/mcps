@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "acme-products": {
+      "command": "npx",
+      "args": ["-y", "tsx", "src/index.ts"],
+      "env": {
+        "PRODUCTS_API_URL": "http://localhost:3000"
+      }
+    }
+  }
+}

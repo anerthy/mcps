@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "acme-products": {
+      "command": "node",
+      "args": ["D:\\dev\\architecture\\project\\acme-mcp\\dist\\index.js"],
+      "env": {
+        "PRODUCTS_API_URL": "http://localhost:1234"
+      }
+    }
+  }
+}
