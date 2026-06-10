@@ -1,0 +1,7 @@
+{
+  "enabledMcpjsonServers": [
+    "acme-products",
+    "keycloak",
+    "postman"
+  ]
+}
