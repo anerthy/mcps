@@ -17,3 +17,5 @@ MCP custom que no solo conecta con la API sino que expone herramientas dinámica
 El proceso de desarrollo también está cubierto: se usa SDD con formato Gherkin, donde la especificación guía el código y los tests. Se menciona una integración futura con SonarQube como evolución natural del sistema.
 
 La presentación cierra con una reflexión honesta sobre el costo de trabajar con modelos de pago hoy, y por qué igual vale la pena apostar a esta forma de trabajar.
+
+Repositorio: https://github.com/anerthy/mcps.git
