@@ -4,7 +4,13 @@
       "command": "npx",
       "args": ["-y", "tsx", "src/index.ts"],
       "env": {
-        "PRODUCTS_API_URL": "http://localhost:3000"
+        "PRODUCTS_API_URL": "http://localhost:1234",
+        "KEYCLOAK_URL": "http://localhost:8080",
+        "REALM": "architects",
+        "CLIENT_ID": "public",
+        "ADMIN_USERNAME": "bryan",
+        "ADMIN_PASSWORD": "bryan",
+        "CLIENT_SECRET": ""
       }
     }
   }

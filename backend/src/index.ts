@@ -29,10 +29,13 @@ const app = express();
 const PORT = 1234;
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? 'http://localhost:8080';
-const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? 'myrealm';
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? 'architects';
 const JWKS_URI = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs`;
 
-let jwksCache: { keys: Map<string, crypto.KeyObject>; expiresAt: number } | null = null;
+let jwksCache: {
+  keys: Map<string, crypto.KeyObject>;
+  expiresAt: number;
+} | null = null;
 
 async function getPublicKey(kid: string): Promise<crypto.KeyObject> {
   if (!jwksCache || Date.now() > jwksCache.expiresAt) {
@@ -40,14 +43,26 @@ async function getPublicKey(kid: string): Promise<crypto.KeyObject> {
     if (!res.ok) {
       throw new Error(`Failed to fetch JWKS: ${res.status}`);
     }
-    const { keys } = await res.json() as { keys: { kid?: string; kty: string; use?: string; [key: string]: unknown }[] };
+    const { keys } = (await res.json()) as {
+      keys: {
+        kid?: string;
+        kty: string;
+        use?: string;
+        [key: string]: unknown;
+      }[];
+    };
     const map = new Map<string, crypto.KeyObject>();
     for (const jwk of keys) {
       if (jwk.use === 'sig' || !jwk.use) {
         try {
-          const key = crypto.createPublicKey({ key: jwk as any, format: 'jwk' });
+          const key = crypto.createPublicKey({
+            key: jwk as any,
+            format: 'jwk',
+          });
           if (jwk.kid) map.set(jwk.kid, key);
-        } catch { /* skip invalid keys */ }
+        } catch {
+          /* skip invalid keys */
+        }
       }
     }
     jwksCache = { keys: map, expiresAt: Date.now() + 3_600_000 };
@@ -57,30 +72,43 @@ async function getPublicKey(kid: string): Promise<crypto.KeyObject> {
   return key;
 }
 
-async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function authenticate(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Missing or invalid Authorization header. Expected: Bearer <token>' });
+    res.status(401).json({
+      error:
+        'Missing or invalid Authorization header. Expected: Bearer <token>',
+    });
     return;
   }
 
   const token = authHeader.slice(7);
 
   try {
-    const decoded = jwt.decode(token, { complete: true }) as { header: { kid: string }; payload: JwtPayload & { realm_access?: { roles: string[] } } } | null;
+    const decoded = jwt.decode(token, { complete: true }) as {
+      header: { kid: string };
+      payload: JwtPayload & { realm_access?: { roles: string[] } };
+    } | null;
     if (!decoded || !decoded.header?.kid) {
       res.status(401).json({ error: 'Invalid token: missing kid' });
       return;
     }
 
     const publicKey = await getPublicKey(decoded.header.kid);
-    const payload = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as JwtPayload & { realm_access?: { roles: string[] } };
+    const payload = jwt.verify(token, publicKey, {
+      algorithms: ['RS256'],
+    }) as JwtPayload & { realm_access?: { roles: string[] } };
 
     const roles = payload.realm_access?.roles ?? [];
     req.user = { roles };
     next();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Invalid or expired token';
+    const message =
+      err instanceof Error ? err.message : 'Invalid or expired token';
     res.status(401).json({ error: message });
   }
 }
@@ -91,7 +119,7 @@ function authorize(...allowedRoles: string[]) {
       res.status(401).json({ error: 'Not authenticated' });
       return;
     }
-    const hasRole = allowedRoles.some(role => req.user!.roles.includes(role));
+    const hasRole = allowedRoles.some((role) => req.user!.roles.includes(role));
     if (!hasRole) {
       res.status(403).json({ error: 'Insufficient permissions' });
       return;
@@ -145,9 +173,14 @@ let nextId = 1;
  *               items:
  *                 $ref: '#/components/schemas/Product'
  */
-app.get('/products', authenticate, authorize('admin', 'customer', 'editor'), (_req: Request, res: Response) => {
-  res.json(products);
-});
+app.get(
+  '/products',
+  authenticate,
+  authorize('admin', 'customer', 'editor'),
+  (_req: Request, res: Response) => {
+    res.json(products);
+  },
+);
 
 /**
  * @openapi
@@ -170,14 +203,19 @@ app.get('/products', authenticate, authorize('admin', 'customer', 'editor'), (_r
  *       404:
  *         description: Product not found
  */
-app.get('/products/:id', authenticate, authorize('admin', 'customer', 'editor'), (req: Request, res: Response) => {
-  const product = products.find((p) => p.id === Number(req.params.id));
-  if (!product) {
-    res.status(404).json({ error: 'Product not found' });
-    return;
-  }
-  res.json(product);
-});
+app.get(
+  '/products/:id',
+  authenticate,
+  authorize('admin', 'customer', 'editor'),
+  (req: Request, res: Response) => {
+    const product = products.find((p) => p.id === Number(req.params.id));
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    res.json(product);
+  },
+);
 
 /**
  * @openapi
@@ -200,24 +238,29 @@ app.get('/products/:id', authenticate, authorize('admin', 'customer', 'editor'),
  *       400:
  *         description: Validation error
  */
-app.post('/products', authenticate, authorize('admin', 'editor'), (req: Request, res: Response) => {
-  const { name, description, price } = req.body;
-  if (!name || price == null) {
-    res.status(400).json({ error: 'name and price are required' });
-    return;
-  }
-  const now = new Date().toISOString();
-  const product: Product = {
-    id: nextId++,
-    name,
-    description: description ?? '',
-    price,
-    createdAt: now,
-    updatedAt: now,
-  };
-  products.push(product);
-  res.status(201).json(product);
-});
+app.post(
+  '/products',
+  authenticate,
+  authorize('admin', 'editor'),
+  (req: Request, res: Response) => {
+    const { name, description, price } = req.body;
+    if (!name || price == null) {
+      res.status(400).json({ error: 'name and price are required' });
+      return;
+    }
+    const now = new Date().toISOString();
+    const product: Product = {
+      id: nextId++,
+      name,
+      description: description ?? '',
+      price,
+      createdAt: now,
+      updatedAt: now,
+    };
+    products.push(product);
+    res.status(201).json(product);
+  },
+);
 
 /**
  * @openapi
@@ -246,19 +289,24 @@ app.post('/products', authenticate, authorize('admin', 'editor'), (req: Request,
  *       404:
  *         description: Product not found
  */
-app.put('/products/:id', authenticate, authorize('admin', 'editor'), (req: Request, res: Response) => {
-  const product = products.find((p) => p.id === Number(req.params.id));
-  if (!product) {
-    res.status(404).json({ error: 'Product not found' });
-    return;
-  }
-  const { name, description, price } = req.body;
-  if (name != null) product.name = name;
-  if (description != null) product.description = description;
-  if (price != null) product.price = price;
-  product.updatedAt = new Date().toISOString();
-  res.json(product);
-});
+app.put(
+  '/products/:id',
+  authenticate,
+  authorize('admin', 'editor'),
+  (req: Request, res: Response) => {
+    const product = products.find((p) => p.id === Number(req.params.id));
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    const { name, description, price } = req.body;
+    if (name != null) product.name = name;
+    if (description != null) product.description = description;
+    if (price != null) product.price = price;
+    product.updatedAt = new Date().toISOString();
+    res.json(product);
+  },
+);
 
 /**
  * @openapi
@@ -277,15 +325,20 @@ app.put('/products/:id', authenticate, authorize('admin', 'editor'), (req: Reque
  *       404:
  *         description: Product not found
  */
-app.delete('/products/:id', authenticate, authorize('admin'), (req: Request, res: Response) => {
-  const idx = products.findIndex((p) => p.id === Number(req.params.id));
-  if (idx === -1) {
-    res.status(404).json({ error: 'Product not found' });
-    return;
-  }
-  products.splice(idx, 1);
-  res.status(204).send();
-});
+app.delete(
+  '/products/:id',
+  authenticate,
+  authorize('admin'),
+  (req: Request, res: Response) => {
+    const idx = products.findIndex((p) => p.id === Number(req.params.id));
+    if (idx === -1) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    products.splice(idx, 1);
+    res.status(204).send();
+  },
+);
 
 /**
  * @openapi
