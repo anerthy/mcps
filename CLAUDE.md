@@ -11,6 +11,7 @@ Three independent TypeScript workspaces demonstrating MCP (Model Context Protoco
 - **acme-mcp** — Custom MCP server exposing products CRUD to Claude Code; tools are filtered at runtime based on the caller's Keycloak roles
 
 All three depend on Keycloak running locally on port 8080.
+Run `keycloak/setup.sh` (or follow `keycloak/setup.md`) to provision the `architects` realm from scratch.
 
 ## Commands
 
